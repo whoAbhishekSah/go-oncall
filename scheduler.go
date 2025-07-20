@@ -6,14 +6,15 @@ import (
 )
 
 func scheduleChecker() {
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(10 * time.Second) // Check every 10 seconds for better granularity
 	defer ticker.Stop()
 	
-	log.Println("Schedule checker started")
+	log.Println("Schedule checker started (checking every 10 seconds)")
 	
 	for {
 		select {
 		case <-ticker.C:
+			log.Println("Checking and Updating schedules")
 			checkAndUpdateSchedules()
 		}
 	}
@@ -40,7 +41,7 @@ func checkAndUpdateSchedules() {
 				nextUserID := getNextOnCallUser(schedule)
 				if nextUserID != 0 {
 					rotationStart := calculateRotationStart(schedule.StartTime, schedule.RotationPeriod, now)
-					rotationEnd := rotationStart.Add(time.Duration(schedule.RotationPeriod) * time.Hour)
+					rotationEnd := rotationStart.Add(time.Duration(schedule.RotationPeriod) * time.Second)
 					
 					err := createOnCallAssignment(schedule.ID, nextUserID, rotationStart, rotationEnd)
 					if err != nil {
@@ -106,7 +107,7 @@ func calculateRotationStart(scheduleStart time.Time, rotationPeriod int, now tim
 	}
 	
 	elapsed := now.Sub(scheduleStart)
-	rotationDuration := time.Duration(rotationPeriod) * time.Hour
+	rotationDuration := time.Duration(rotationPeriod) * time.Second
 	
 	rotationsSinceStart := elapsed / rotationDuration
 	

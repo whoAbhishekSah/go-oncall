@@ -327,8 +327,28 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
                     <input type="datetime-local" id="endTime" name="endTime" required>
                 </div>
                 <div class="form-group">
-                    <label for="rotationPeriod">Rotation Period (hours):</label>
-                    <input type="number" id="rotationPeriod" name="rotationPeriod" min="1" placeholder="24" required>
+                    <label for="rotationPeriod">Rotation Period:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div style="flex: 1;">
+                            <label for="rotationDays" style="font-size: 12px; margin-bottom: 2px;">Days</label>
+                            <input type="number" id="rotationDays" name="rotationDays" min="0" max="365" placeholder="0" style="width: 100%;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="rotationHours" style="font-size: 12px; margin-bottom: 2px;">Hours</label>
+                            <input type="number" id="rotationHours" name="rotationHours" min="0" max="23" placeholder="1" style="width: 100%;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="rotationMinutes" style="font-size: 12px; margin-bottom: 2px;">Minutes</label>
+                            <input type="number" id="rotationMinutes" name="rotationMinutes" min="0" max="59" placeholder="0" style="width: 100%;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label for="rotationSeconds" style="font-size: 12px; margin-bottom: 2px;">Seconds</label>
+                            <input type="number" id="rotationSeconds" name="rotationSeconds" min="0" max="59" placeholder="0" style="width: 100%;">
+                        </div>
+                    </div>
+                    <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">
+                        Minimum rotation period is 1 second. Common examples: 1 day = 1d 0h 0m 0s, 8 hours = 0d 8h 0m 0s
+                    </small>
                 </div>
                 <div class="form-group">
                     <label for="participants">Participants (comma-separated user IDs):</label>
@@ -390,6 +410,22 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
                     toast.parentElement.removeChild(toast);
                 }
             }, 300);
+        }
+        
+        // Utility function to format duration from seconds
+        function formatDuration(totalSeconds) {
+            const days = Math.floor(totalSeconds / (24 * 60 * 60));
+            const hours = Math.floor((totalSeconds % (24 * 60 * 60)) / (60 * 60));
+            const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
+            const seconds = totalSeconds % 60;
+            
+            const parts = [];
+            if (days > 0) parts.push(days + 'd');
+            if (hours > 0) parts.push(hours + 'h');
+            if (minutes > 0) parts.push(minutes + 'm');
+            if (seconds > 0 || parts.length === 0) parts.push(seconds + 's');
+            
+            return parts.join(' ');
         }
         
         // Navigation functions
@@ -474,6 +510,19 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
             const formData = new FormData(this);
             const participants = formData.get('participants').split(',').map(p => parseInt(p.trim()));
             
+            // Calculate total rotation period in seconds
+            const days = parseInt(formData.get('rotationDays') || 0);
+            const hours = parseInt(formData.get('rotationHours') || 0);
+            const minutes = parseInt(formData.get('rotationMinutes') || 0);
+            const seconds = parseInt(formData.get('rotationSeconds') || 0);
+            
+            const totalSeconds = (days * 24 * 60 * 60) + (hours * 60 * 60) + (minutes * 60) + seconds;
+            
+            if (totalSeconds < 1) {
+                showToast('error', 'Invalid Rotation Period', 'Rotation period must be at least 1 second.');
+                return;
+            }
+            
             fetch('/schedules', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
@@ -482,7 +531,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
                     name: formData.get('scheduleName'),
                     start_time: formData.get('startTime'),
                     end_time: formData.get('endTime'),
-                    rotation_period: parseInt(formData.get('rotationPeriod')),
+                    rotation_period: totalSeconds,
                     participants: participants
                 })
             })
@@ -560,7 +609,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
                             '<h4>📅 ' + schedule.name + ' (Team ID: ' + schedule.team_id + ')</h4>' +
                             '<p><strong>Start:</strong> ' + new Date(schedule.start_time).toLocaleString() + '</p>' +
                             '<p><strong>End:</strong> ' + new Date(schedule.end_time).toLocaleString() + '</p>' +
-                            '<p><strong>Rotation:</strong> ' + schedule.rotation_period + ' hours</p>' +
+                            '<p><strong>Rotation:</strong> ' + formatDuration(schedule.rotation_period) + '</p>' +
                             '<p><strong>Participants (User IDs):</strong> ' + (schedule.participants ? schedule.participants.join(', ') : 'None') + '</p>' +
                             '</div>'
                         ).join('');

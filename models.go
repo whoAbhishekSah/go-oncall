@@ -23,7 +23,7 @@ type Schedule struct {
 	Name           string    `json:"name"`
 	StartTime      time.Time `json:"start_time"`
 	EndTime        time.Time `json:"end_time"`
-	RotationPeriod int       `json:"rotation_period"` // in hours
+	RotationPeriod int       `json:"rotation_period"` // in seconds
 	Participants   []int     `json:"participants"`    // user IDs
 	CreatedAt      time.Time `json:"created_at"`
 }
