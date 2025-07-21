@@ -34,5 +34,6 @@ type OnCallAssignment struct {
 	UserID     int       `json:"user_id"`
 	StartTime  time.Time `json:"start_time"`
 	EndTime    time.Time `json:"end_time"`
+	Timezone   string    `json:"timezone"`
 	Active     bool      `json:"active"`
 }

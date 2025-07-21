@@ -161,7 +161,16 @@ func getSchedules() ([]Schedule, error) {
 
 // OnCall Assignment functions
 func getCurrentOnCallAssignments() ([]OnCallAssignment, error) {
-	rows, err := db.Query("SELECT id, schedule_id, COALESCE(user_id, 0) as user_id, start_time, end_time, active FROM oncall_assignments WHERE active = true")
+	query := `
+		SELECT a.id, a.schedule_id, a.user_id, a.start_time, a.end_time, a.active 
+		FROM oncall_assignments a
+		INNER JOIN (
+			SELECT schedule_id, MAX(start_time) as max_start_time
+			FROM oncall_assignments 
+			GROUP BY schedule_id
+		) latest ON a.schedule_id = latest.schedule_id AND a.start_time = latest.max_start_time`
+	fmt.Printf("Executing query: %s\n", query)
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
